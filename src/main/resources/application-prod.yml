@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 30
+      minimum-idle: 10
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+aws:
+  s3:
+    bucket: ${AWS_S3_BUCKET}
+
+logging:
+  level:
+    root: WARN
+    com.cloudsync: INFO
+  file:
+    name: /var/log/cloudsync/application.log
+    max-size: 100MB
+    max-history: 30

@@ -1,0 +1,168 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+    min-response-size: 1024
+
+spring:
+  application:
+    name: cloudsync
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10GB
+      max-request-size: 10GB
+      file-size-threshold: 10MB
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:cloudsync}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: CloudSync-HikariCP
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 30000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DB:0}
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+          max-wait: 3000ms
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000
+      cache-null-values: false
+
+# AWS S3 Configuration
+aws:
+  s3:
+    endpoint: ${AWS_S3_ENDPOINT:}
+    region: ${AWS_REGION:us-east-1}
+    bucket: ${AWS_S3_BUCKET:cloudsync-files}
+    access-key: ${AWS_ACCESS_KEY:}
+    secret-key: ${AWS_SECRET_KEY:}
+    presigned-url-expiry: 3600
+    multipart:
+      chunk-size: 15728640
+      max-concurrency: 10
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:cloudsyncSuperSecretKeyThatShouldBeAtLeast256BitsLongForHS256Algorithm2024}
+  access-token-expiry: 900000
+  refresh-token-expiry: 604800000
+  issuer: cloudsync
+
+# Resilience4j Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      s3Operations:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 30s
+        failureRateThreshold: 50
+        slowCallRateThreshold: 80
+        slowCallDurationThreshold: 5s
+        recordExceptions:
+          - software.amazon.awssdk.core.exception.SdkClientException
+          - java.net.SocketTimeoutException
+          - java.io.IOException
+  retry:
+    instances:
+      s3Operations:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - software.amazon.awssdk.core.exception.SdkClientException
+          - java.net.SocketTimeoutException
+          - java.io.IOException
+        ignoreExceptions:
+          - software.amazon.awssdk.services.s3.model.NoSuchKeyException
+          - com.cloudsync.exception.FileNotFoundException
+  timelimiter:
+    instances:
+      s3Operations:
+        timeoutDuration: 30s
+        cancelRunningFuture: true
+
+# CloudSync App Configuration
+cloudsync:
+  upload:
+    temp-directory: ${UPLOAD_TEMP_DIR:/tmp/cloudsync-uploads}
+    resumable: true
+    cleanup-interval: 3600
+  storage:
+    max-file-size: 10737418240
+    allowed-extensions: ${ALLOWED_EXTENSIONS:jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,zip,tar,gz,mp4,mp3,wav,avi,mov}
+  rate-limit:
+    upload-per-minute: 100
+    download-per-minute: 200
+    api-per-minute: 1000
+  consistent-hash:
+    virtual-nodes: 150
+    nodes: ${STORAGE_NODES:node1,node2,node3}
+
+# Actuator & Swagger
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,circuitbreakers,retries
+  endpoint:
+    health:
+      show-details: always
+  health:
+    circuitbreakers:
+      enabled: true
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
+logging:
+  level:
+    root: INFO
+    com.cloudsync: DEBUG
+    org.springframework.security: INFO
+    software.amazon.awssdk: WARN
+    org.hibernate.SQL: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
