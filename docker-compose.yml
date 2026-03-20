@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  # CloudSync Application
+  cloudsync:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cloudsync-app
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=cloudsync
+      - DB_USERNAME=cloudsync
+      - DB_PASSWORD=cloudsync_secret_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=redis_password
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET:-cloudsync-files}
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY:-minioadmin}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY:-minioadmin}
+      - JWT_SECRET=${JWT_SECRET:-cloudsyncSuperSecretKeyThatShouldBeAtLeast256BitsLongForHS256Algorithm2024}
+      - UPLOAD_TEMP_DIR=/tmp/cloudsync-uploads
+    volumes:
+      - cloudsync-uploads:/tmp/cloudsync-uploads
+      - cloudsync-logs:/var/log/cloudsync
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - cloudsync-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: cloudsync-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - MYSQL_DATABASE=cloudsync
+      - MYSQL_USER=cloudsync
+      - MYSQL_PASSWORD=cloudsync_secret_password
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - cloudsync-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: cloudsync-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass redis_password --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks:
+      - cloudsync-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  mysql-data:
+    driver: local
+  redis-data:
+    driver: local
+  cloudsync-uploads:
+    driver: local
+  cloudsync-logs:
+    driver: local
+
+networks:
+  cloudsync-network:
+    driver: bridge
