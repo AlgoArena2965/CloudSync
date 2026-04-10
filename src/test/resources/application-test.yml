@@ -1,0 +1,47 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  cache:
+    type: simple
+
+aws:
+  s3:
+    region: us-east-1
+    bucket: test-bucket
+    access-key: test
+    secret-key: test
+    presigned-url-expiry: 3600
+
+jwt:
+  secret: testSecretKeyForUnitTestsThatIsLongEnough256Bits1234567890
+  access-token-expiry: 900000
+  refresh-token-expiry: 604800000
+  issuer: cloudsync-test
+
+cloudsync:
+  upload:
+    temp-directory: /tmp/cloudsync-test-uploads
+    resumable: true
+    cleanup-interval: 60
+  storage:
+    max-file-size: 1073741824
+    allowed-extensions: jpg,png,pdf,doc,docx,zip
+  consistent-hash:
+    virtual-nodes: 50
+    nodes: node1,node2,node3
+
+logging:
+  level:
+    root: WARN
+    com.cloudsync: DEBUG
