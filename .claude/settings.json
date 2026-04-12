@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -sL https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/maven-wrapper/3.3.1/maven-wrapper-3.3.1.jar -o .mvn/wrapper/maven-wrapper.jar)",
+      "Bash(chmod +x /home/shubhansh/Desktop/CloudSync/mvnw)",
+      "Bash(./mvnw compile:*)",
+      "Read(//home/shubmansh/Desktop/CloudSync/src/main/java/com/cloudsync/model/entity/**)",
+      "Bash(./mvnw test:*)",
+      "Bash(./mvnw clean:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(curl -s http://localhost:5173)",
+      "Bash(./mvnw spring-boot:run)",
+      "Bash(curl -s http://localhost:8080/api/actuator/health)",
+      "Bash(docker-compose ps:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker cp:*)",
+      "Bash(docker-compose up:*)"
+    ]
+  }
+}
