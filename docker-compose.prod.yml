@@ -1,11 +1,14 @@
 version: '3.8'
 
 services:
-  cloudsync:
+  # =====================
+  # Spring Boot Backend
+  # =====================
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
-    image: cloudsync:latest
+    image: cloudsync-backend:latest
     container_name: cloudsync-backend
     ports:
       - "8080:8080"
@@ -24,20 +27,51 @@ services:
       - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
       - AWS_SECRET_KEY=${AWS_SECRET_KEY}
       - JWT_SECRET=${JWT_SECRET}
+      - SERVER_PORT=8080
+    volumes:
+      - /tmp/cloudsync-uploads:/tmp/cloudsync-uploads
+      - backend-logs:/var/log/cloudsync
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 90s
     deploy:
       resources:
         limits:
           memory: 1G
         reservations:
           memory: 512M
+    networks:
+      - cloudsync-network
+
+  # =====================
+  # Frontend with Nginx
+  # =====================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.frontend
+    image: cloudsync-frontend:latest
+    container_name: cloudsync-frontend
+    ports:
+      - "80:80"
+    environment:
+      - BACKEND_URL=http://backend:8080
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - cloudsync-network
 
 networks:
-  default:
-    name: cloudsync-network
+  cloudsync-network:
+    driver: bridge
+
+volumes:
+  backend-logs:
