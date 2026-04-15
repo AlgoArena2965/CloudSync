@@ -3,6 +3,8 @@
 # ============================
 FROM eclipse-temurin:17-jdk-alpine AS builder
 
+RUN apk add --no-cache curl
+
 WORKDIR /app
 
 # Copy Maven wrapper and pom.xml
