@@ -123,7 +123,10 @@ public class ConsistentHashRing {
      * This creates a deterministic partition based on org+user+path combination.
      */
     public String getNodeForFile(Long organizationId, Long userId, String filePath) {
-        String key = String.format("%d:%d:%s", organizationId, userId, filePath != null ? filePath : "root");
+        String key = String.format("%s:%s:%s",
+                organizationId != null ? organizationId : 0L,
+                userId != null ? userId : 0L,
+                filePath != null ? filePath : "root");
         return getNode(key);
     }
 

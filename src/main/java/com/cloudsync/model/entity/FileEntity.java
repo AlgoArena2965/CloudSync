@@ -57,7 +57,7 @@ public class FileEntity extends BaseEntity {
     private Long ownerId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organization_id", nullable = false)
+    @JoinColumn(name = "organization_id")
     private Organization organization;
 
     @Column(name = "file_hash", length = 64)
