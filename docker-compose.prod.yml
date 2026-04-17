@@ -19,9 +19,9 @@ services:
       - DB_NAME=${DB_NAME:-cloudsync}
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
-      - REDIS_HOST=${REDIS_HOST:-}
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=redis_password
       - AWS_REGION=${AWS_REGION:-us-east-1}
       - AWS_S3_BUCKET=${AWS_S3_BUCKET}
       - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
@@ -92,11 +92,10 @@ services:
     networks:
       - cloudsync-network
 
-volumes:
-  redis-data:
-  backend-logs:
+networks:
   cloudsync-network:
     driver: bridge
 
 volumes:
+  redis-data:
   backend-logs:
