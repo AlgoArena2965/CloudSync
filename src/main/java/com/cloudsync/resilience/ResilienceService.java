@@ -59,21 +59,17 @@ public class ResilienceService {
      * Execute a supplier with circuit breaker and retry protection.
      */
     public <T> T executeWithResilience(Supplier<T> supplier) {
-        @SuppressWarnings("unchecked")
-        Supplier<T> retriedSupplier = (Supplier<T>) s3Retry.executeSupplier(supplier);
-        @SuppressWarnings("unchecked")
-        T result = (T) s3CircuitBreaker.executeSupplier(retriedSupplier);
-        return result;
+        Supplier<T> retriedSupplier = () -> s3Retry.executeSupplier(supplier);
+        return s3CircuitBreaker.executeSupplier(retriedSupplier);
     }
 
     /**
      * Execute with fallback on circuit breaker open.
      */
-    @SuppressWarnings("unchecked")
     public <T> T executeWithFallback(Supplier<T> supplier, Supplier<T> fallback) {
         try {
-            Supplier<T> retriedSupplier = (Supplier<T>) s3Retry.executeSupplier(supplier);
-            return (T) s3CircuitBreaker.executeSupplier(retriedSupplier);
+            Supplier<T> retriedSupplier = () -> s3Retry.executeSupplier(supplier);
+            return s3CircuitBreaker.executeSupplier(retriedSupplier);
         } catch (CallNotPermittedException e) {
             log.warn("Circuit breaker is OPEN. Executing fallback.");
             return fallback.get();
